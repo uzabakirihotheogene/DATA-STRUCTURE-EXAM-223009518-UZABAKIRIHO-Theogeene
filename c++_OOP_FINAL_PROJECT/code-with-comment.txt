@@ -1,0 +1,173 @@
+
+#include <iostream>  // Includes the input-output stream for console printing
+// Structures for Graph Components
+
+struct Edge {
+    int to;            // Destination vertex ID
+    float weight;      // Weight of the edge
+};
+struct Vertex {
+    int id;            // Vertex identifier
+    Edge* edges;       // Pointer to dynamic array of edges
+    int edgeCount;     // Number of edges connected to this vertex
+
+    Vertex() : id(-1), edges(nullptr), edgeCount(0) {}  // Default constructor initializes values
+};
+
+//  Abstract Graph Class (Interface)
+
+
+class Graph {
+public:
+    virtual void addVertex(int id) = 0;            // Pure virtual function to add a vertex
+    virtual void removeVertex(int id) = 0;         // Remove a vertex
+    virtual void addEdge(int from, int to, float weight) = 0; // Add an edge
+    virtual void printGraph() const = 0;           // Display graph info
+    virtual ~Graph() {}                            // Virtual destructor for safe cleanup
+};
+
+
+//  DirectedGraph Implementation
+
+class DirectedGraph : public Graph {
+protected:
+    Vertex* vertices;     // Dynamic array of vertices
+    int vertexCount;      // Total number of vertices
+
+
+public:
+    DirectedGraph() : vertices(nullptr), vertexCount(0) {}  // Constructor initializes empty graph
+    void addVertex(int id) override {
+        Vertex* newVertices = new Vertex[vertexCount + 1];   // Allocate space for one more vertex
+        for (int i = 0; i < vertexCount; ++i)
+            newVertices[i] = vertices[i];                    // Copy existing vertices
+
+        newVertices[vertexCount].id = id;                    // Set new vertex ID
+        newVertices[vertexCount].edges = nullptr;            // No edges yet
+        newVertices[vertexCount].edgeCount = 0;
+
+        delete[] vertices;                                   // Free old vertex array
+        vertices = newVertices;                              // Replace with new array
+        vertexCount++;                                       // Increase count
+    }
+
+
+    void removeVertex(int id) override {
+        int index = -1;
+        for (int i = 0; i < vertexCount; ++i) {
+            if (vertices[i].id == id) {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) return;                             // Vertex not found
+
+        delete[] vertices[index].edges;                      // Free edges
+
+        Vertex* newVertices = new Vertex[vertexCount - 1];
+        for (int i = 0, j = 0; i < vertexCount; ++i) {
+            if (i != index) {
+                newVertices[j++] = vertices[i];              // Copy all except removed vertex
+            }
+        }
+
+        delete[] vertices;                                   // Free old array
+        vertices = newVertices;
+        vertexCount--;                                       // Decrease count
+    }
+
+
+
+    void addEdge(int from, int to, float weight) override {
+        for (int i = 0; i < vertexCount; ++i) {
+            if (vertices[i].id == from) {
+                Vertex& v = vertices[i];
+                Edge* newEdges = new Edge[v.edgeCount + 1];  // Allocate new edge array
+
+                for (int j = 0; j < v.edgeCount; ++j)
+                    *(newEdges + j) = *(v.edges + j);        // Copy edges using pointer arithmetic
+
+                *(newEdges + v.edgeCount) = { to, weight };  // Add new edge
+
+                delete[] v.edges;
+                v.edges = newEdges;
+                v.edgeCount++;
+                return;
+            }
+        }
+    }
+
+
+    void printGraph() const override {
+        for (int i = 0; i < vertexCount; ++i) {
+            const Vertex& v = vertices[i];
+            std::cout << "Vertex " << v.id << " -> ";
+            for (int j = 0; j < v.edgeCount; ++j) {
+                const Edge& e = *(v.edges + j);              // Use pointer arithmetic
+                std::cout << "(" << e.to << ", w=" << e.weight << ") ";
+            }
+            std::cout << "\n";
+        }
+    }
+
+
+    virtual ~DirectedGraph() {
+        for (int i = 0; i < vertexCount; ++i)
+            delete[] vertices[i].edges;                      // Free all edges
+        delete[] vertices;                                   // Free vertex array
+    }
+};
+
+//  CyclicGraph (Prevents Duplicate Edges)
+
+class CyclicGraph : public DirectedGraph {
+public:
+    void addEdge(int from, int to, float weight) override {
+        for (int i = 0; i < vertexCount; ++i) {
+            if (vertices[i].id == from) {
+                Vertex& v = vertices[i];
+                for (int j = 0; j < v.edgeCount; ++j) {
+                    if ((v.edges + j)->to == to) {           // Check if edge already exists
+                        std::cout << "Edge already exists, preventing cycle.\n";
+                        return;
+                    }
+                }
+                break;
+            }
+        }
+        DirectedGraph::addEdge(from, to, weight);            // Call base class if not duplicate
+    }
+};
+
+
+// Main Function: Using the Graph
+
+int main() {
+    Graph** graphs = new Graph*[2];                          // Create array of Graph pointers
+
+    graphs[0] = new DirectedGraph();                         // Index 0 -> DirectedGraph
+    graphs[1] = new CyclicGraph();                           // Index 1 -> CyclicGraph
+
+    // Using Directed Graph
+    graphs[0]->addVertex(1);
+    graphs[0]->addVertex(2);
+    graphs[0]->addEdge(1, 2, 5.0f);
+    graphs[0]->addEdge(2, 1, 3.0f);
+    std::cout << "Directed Graph:\n";
+    graphs[0]->printGraph();
+
+
+    // Using Cyclic Graph
+    graphs[1]->addVertex(10);
+    graphs[1]->addVertex(20);
+    graphs[1]->addEdge(10, 20, 2.0f);
+    graphs[1]->addEdge(10, 20, 4.0f); // should be rejected
+    std::cout << "\nCyclic Graph:\n";
+    graphs[1]->printGraph();
+    // Cleanup
+    for (int i = 0; i < 2; ++i)
+        delete graphs[i];             // Free graph objects
+    delete[] graphs;                  // Free array of graph pointers
+
+    return 0;
+}
