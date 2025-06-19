@@ -1,6 +1,5 @@
 #include <iostream>
 
-// ===== Edge and Vertex =====
 struct Edge {
     int to;
     float weight;
@@ -14,7 +13,7 @@ struct Vertex {
     Vertex() : id(-1), edges(nullptr), edgeCount(0) {}
 };
 
-// ===== Abstract Graph Base Class =====
+
 class Graph {
 public:
     virtual void addVertex(int id) = 0;
@@ -24,7 +23,7 @@ public:
     virtual ~Graph() {}
 };
 
-// ===== Directed Graph =====
+
 class DirectedGraph : public Graph {
 protected:
     Vertex* vertices;
@@ -78,7 +77,7 @@ public:
                 Edge* newEdges = new Edge[v.edgeCount + 1];
 
                 for (int j = 0; j < v.edgeCount; ++j)
-                    *(newEdges + j) = *(v.edges + j); // Pointer arithmetic
+                    *(newEdges + j) = *(v.edges + j); 
 
                 *(newEdges + v.edgeCount) = { to, weight };
 
@@ -95,7 +94,7 @@ public:
             const Vertex& v = vertices[i];
             std::cout << "Vertex " << v.id << " -> ";
             for (int j = 0; j < v.edgeCount; ++j) {
-                const Edge& e = *(v.edges + j); // pointer arithmetic
+                const Edge& e = *(v.edges + j); 
                 std::cout << "(" << e.to << ", w=" << e.weight << ") ";
             }
             std::cout << "\n";
@@ -109,7 +108,7 @@ public:
     }
 };
 
-// ===== CyclicGraph - prevents duplicate edges (simple check) =====
+
 class CyclicGraph : public DirectedGraph {
 public:
     void addEdge(int from, int to, float weight) override {
@@ -130,13 +129,13 @@ public:
 };
 
 int main() {
-    // ===== Graph Pointer Array =====
+    
     Graph** graphs = new Graph*[2];
 
     graphs[0] = new DirectedGraph();
     graphs[1] = new CyclicGraph();
 
-    // ===== Using Directed Graph =====
+    
     graphs[0]->addVertex(1);
     graphs[0]->addVertex(2);
     graphs[0]->addEdge(1, 2, 5.0f);
@@ -144,15 +143,15 @@ int main() {
     std::cout << "Directed Graph:\n";
     graphs[0]->printGraph();
 
-    // ===== Using Cyclic Graph =====
+    
     graphs[1]->addVertex(10);
     graphs[1]->addVertex(20);
     graphs[1]->addEdge(10, 20, 2.0f);
-    graphs[1]->addEdge(10, 20, 4.0f); // should be rejected
+    graphs[1]->addEdge(10, 20, 4.0f); 
     std::cout << "\nCyclic Graph:\n";
     graphs[1]->printGraph();
 
-    // ===== Cleanup =====
+    
     for (int i = 0; i < 2; ++i)
         delete graphs[i];
     delete[] graphs;
